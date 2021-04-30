@@ -26,7 +26,7 @@ class TweetsListener(StreamListener):
     #reduce workload in the long run by doing it once
     def clean_tweet(tweet):
         tweet = re.sub(r'@[^\s]+','',tweet) # remove @mentions
-        tweet = re.sub()r"\S*http?:\S*",'',tweet) #remove URL
+        tweet = re.sub(r"\S*http?:\S*",'',tweet) #remove URL
         tweet = re.sub(r'[^A-Za-z0-9 ]','',tweet) #remove special
         tweet = re.sub(r'[ \n\r]{2,}',' ',tweet) #remove exccess spaces
         tweet = tweet.strip().lower() #cleanup space remove, force lower
