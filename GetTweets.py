@@ -1,5 +1,3 @@
-# TweetRead.py
-# This first python script doesn’t use Spark at all:
 import os
 import tweepy
 from tweepy import OAuthHandler
@@ -7,6 +5,7 @@ from tweepy import Stream
 from tweepy.streaming import StreamListener
 import socket
 import json
+import re
  
 #read keys from a seperate file, for github privacy
 with open("config.json","r") as key:
@@ -24,22 +23,42 @@ class TweetsListener(StreamListener):
 
     #to me, it makes sense to clean data before it's passed to spark.
     #reduce workload in the long run by doing it once
-    def clean_tweet(tweet):
+    def clean_tweet(self,tweet):
+        tweet = re.sub(r'^RT ','',tweet) # remove the RT from retweets
         tweet = re.sub(r'@[^\s]+','',tweet) # remove @mentions
-        tweet = re.sub(r"\S*http?:\S*",'',tweet) #remove URL
+        tweet = re.sub(r"\S*https?:\S*",'',tweet) #remove URL
+        tweet = re.sub(r'\\+u\S*','',tweet) #unicode
         tweet = re.sub(r'[^A-Za-z0-9 ]','',tweet) #remove special
         tweet = re.sub(r'[ \n\r]{2,}',' ',tweet) #remove exccess spaces
         tweet = tweet.strip().lower() #cleanup space remove, force lower
+        return tweet
 
     def on_data(self, data):
+        print("ONDATA")
         try:
+            #Dump the json
             tweet = json.loads(data)
-            tweet = clean_tweet(tweet['text'])
-            print("Tweet: {}".format(tweet))
+            #print(tweet)
+
+            #Retweets are annoyingly differently formatted
+            if 'RetweetedStatus' in tweet:
+                print("Retweet:")
+                tweet = tweet['retweeted_status']['extended_tweet']['full_text']
+            else:
+                print("Original Tweet:")
+                if 'extended_tweet' in tweet:
+                    tweet = tweet['extended_tweet']['full_text']
+                else:
+                    tweet = tweet['text']
+            print("Raw Tweet:",tweet)
+            tweet = self.clean_tweet(str(tweet))
+            print("Cleaned Tweet: {}".format(tweet))
+
+            tweet+="\r\n"
 
             self.client_socket.sendall(tweet.encode('utf-8'))
             return True
-        except BaseException as e:
+        except Exception as e:
             print("Error on_data: %s" % str(e))
         return True
  
@@ -60,11 +79,9 @@ if __name__ == "__main__":
     port = 5555            
     s.bind((host, port))
  
-    print("Escuchando sobre puerto: {}".format(port))
+    print("Listening on Port {}.".format(port))
  
     s.listen(1)                 
     c, addr = s.accept()        
- 
-    #print( "Encontro: {}".format((addr[0])))
  
     sendData( c )
