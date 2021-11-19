@@ -29,6 +29,7 @@ The goal of the project is to develop a model to effectively determine sentiment
 
 <div align="center">
 <img src="https://cdn.discordapp.com/attachments/730601435464466552/911090638274035753/Untitled-1.png" height="100"></img>  
+</div>
 
 ## Technology
 
